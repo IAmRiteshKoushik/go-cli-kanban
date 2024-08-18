@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -12,6 +14,7 @@ import (
 type status int
 
 const divisor = 4
+
 const (
     todo status = iota
     inProgress
@@ -19,12 +22,23 @@ const (
 )
 
 /* CUSTOM ITEM */
-
 type Task struct {
     status status
     title string
     description string
 }
+
+func NewTask(status status, title, description string) Task {
+    return Task{
+        title: title, 
+        description: description, 
+        status: status,
+    }
+}
+
+// TODO : Create a fix to move tasks to particular columns instead of the 
+// following column by default
+
 // func (t *Task) Prev() {
 //     if t.status == todo {
 //         t.status = done
@@ -40,6 +54,13 @@ func (t *Task) Next() {
         t.status++
     }
 }
+
+/* MODEL MANAGEMENT */
+var models []tea.Model
+const (
+    model status = iota
+    form
+)
 
 /* STYLING */
 var (
@@ -166,7 +187,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
             m.Next()
         case "enter":
             return m, m.MoveToNext() 
+        case "n":
+            models[model] = m // save the state of current model
+            models[form] = NewForm(m.focused)
+            return models[form].Update(nil) // renders the view as well
         }
+    case Task:
+        task := msg
+        return m, m.lists[task.status].
+            InsertItem(len(m.lists[task.status].Items()), task)
     }
     var cmd tea.Cmd
     m.lists[m.focused], cmd = m.lists[m.focused].Update(msg)
@@ -210,8 +239,73 @@ func (m Model) View() string {
     }
 }
 
+/* FORM MODEL */
+type Form struct {
+    focused     status
+    title       textinput.Model
+    description textarea.Model
+}
+
+func NewForm(focused status) *Form {
+    form := &Form{focused: focused}
+    form.title = textinput.New()
+    form.title.Focus()
+    form.description = textarea.New()
+    return form
+}
+
+func (m Form)CreateTask() tea.Msg {
+    task := NewTask(m.focused, m.title.Value(), m.description.Value())
+    return task
+}
+
+func (m Form) Init() tea.Cmd {
+    return nil
+}
+
+func (m Form) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+    var cmd tea.Cmd
+    switch msg := msg.(type) {
+
+    // Navigating the model
+    case tea.KeyMsg:
+        switch msg.String() {
+        case "ctrl+c", "q":
+            return m, tea.Quit
+        case "enter":
+            // If you are done writing the title
+            if m.title.Focused() {
+                m.title.Blur()
+                m.description.Focus()
+                return m, textarea.Blink
+            } else {
+                models[form] = m
+                return models[model], m.CreateTask
+            }
+        }
+    }
+
+    // Updating the title
+    if m.title.Focused() {
+        m.title, cmd = m.title.Update(msg)
+        return m, cmd
+
+    // Updating the description
+    } else {
+        m.description, cmd = m.description.Update(msg)
+        return m, cmd
+    }
+}
+
+func (m Form) View() string {
+    return lipgloss.JoinVertical(lipgloss.Left, 
+        m.title.View(), m.description.View())
+}
+
 func main() {
-    m := New()    
+    models = []tea.Model{New(), NewForm(todo)}
+    // Opens the main model by default
+    m := models[model]    
     p := tea.NewProgram(m)
     if _, err := p.Run(); err != nil {
         fmt.Println(err)
