@@ -10,7 +10,7 @@ This is a simple kanban board for the CLI written in Go with the help of
 ![Screenshot of working program](./screenshot.png)
 
 ## Setup and Installation
-Make sure to have Go v1.8 or higher installed on your system for this program 
+Make sure to have Go v1.18 or higher installed on your system for this program 
 to run.
 ```bash
 # Using the Git CLI
@@ -51,4 +51,4 @@ go run .
 - [ ] Add filtering functionality within lists `(bug-fix)`
 - [ ] If a list becomes empty, the program crashes `(fix)`
 - [ ] Convert the CLI to a TUI for better navigation `(feat)`
-
+- [ ] Add a database for persistance of todos. `(feat)`
