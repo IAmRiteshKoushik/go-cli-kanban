@@ -48,7 +48,7 @@ go run .
 - [X] Move tasks between lists
 
 ## Some good extensions
-- [ ] Add filtering functionality within lists
-- [ ] If a list becomes empty, the program crashes
-- [ ] Convert the CLI to a TUI for better navigation
+- [ ] Add filtering functionality within lists `(bug-fix)`
+- [ ] If a list becomes empty, the program crashes `(fix)`
+- [ ] Convert the CLI to a TUI for better navigation `(feat)`
 
